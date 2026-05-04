@@ -344,7 +344,28 @@ img { display: block; max-width: 100%; }
   z-index: 2;
   padding: 40px 48px;
   max-width: 700px;
-  animation: heroFadeUp 0.8s ease both;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.hero-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.hero-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.hero-dot.active {
+  background: var(--red);
+  width: 30px;
+  border-radius: 10px;
 }
 
 @keyframes heroFadeUp {

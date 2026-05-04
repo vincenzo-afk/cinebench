@@ -231,7 +231,7 @@ function renderSkeletons(container, count = 10) {
 // ============================================================
 
 async function loadHero() {
-  const data       = await apiFetch('/trending/movie/day');
+  const data = await apiFetch('/trending/movie/day');
   const heroContent  = document.getElementById('heroContent');
   const heroBackdrop = document.getElementById('heroBackdrop');
 
@@ -240,32 +240,72 @@ async function loadHero() {
     return;
   }
 
-  const movie   = data.results[0];
-  const backdrop = movie.backdrop_path
-    ? `${BACKDROP_BASE}${movie.backdrop_path}`
-    : PLACEHOLDER_BACKDROP;
-  heroBackdrop.style.backgroundImage = `url(${backdrop})`;
+  state.heroMovies = data.results.slice(0, 8);
+  state.heroIndex  = 0;
 
-  const detail   = await apiFetch(`/movie/${movie.id}`);
-  const tagline  = detail?.tagline || '';
-  const inWL     = (lsGet(LS.WATCHLIST) || []).some(m => m.id === movie.id);
-
-  heroContent.innerHTML = `
-    <div class="hero-meta">
-      <span class="hero-badge badge-${getRatingClass(movie.vote_average)}">★ ${Number(movie.vote_average).toFixed(1)}</span>
-      <span class="hero-year">${formatYear(movie.release_date)}</span>
-    </div>
-    <h1 class="hero-title">${escHtml(movie.title)}</h1>
-    ${tagline ? `<p class="hero-tagline">${escHtml(tagline)}</p>` : ''}
-    <p class="hero-overview">${movie.overview ? escHtml(movie.overview.substring(0, 200)) + '…' : ''}</p>
-    <div class="hero-buttons">
-      <button class="btn-primary" onclick="openModal(${movie.id},'movie')">▶ View Details</button>
-      <button class="btn-secondary hero-watchlist-btn${inWL ? ' active' : ''}" id="heroWatchlistBtn"
-              onclick="toggleHeroWatchlist(${movie.id})">
-        ${inWL ? '✓ In Watchlist' : '🔖 Add to Watchlist'}
-      </button>
-    </div>`;
+  renderHero();
+  startHeroTimer();
 }
+
+function renderHero() {
+  const heroBackdrop = document.getElementById('heroBackdrop');
+  const heroContent  = document.getElementById('heroContent');
+  if (!heroBackdrop || !heroContent) return;
+
+  const movie = state.heroMovies[state.heroIndex];
+  if (!movie) return;
+
+  const backdrop = movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : PLACEHOLDER_BACKDROP;
+  
+  heroContent.style.opacity = '0';
+  heroContent.style.transform = 'translateY(20px)';
+
+  setTimeout(async () => {
+    heroBackdrop.style.backgroundImage = `url(${backdrop})`;
+    
+    const detail  = await apiFetch(`/movie/${movie.id}`);
+    const tagline = detail?.tagline || '';
+    const inWL    = (lsGet(LS.WATCHLIST) || []).some(m => m.id === movie.id);
+
+    heroContent.innerHTML = `
+      <div class="hero-meta">
+        <span class="hero-badge badge-${getRatingClass(movie.vote_average)}">★ ${Number(movie.vote_average).toFixed(1)}</span>
+        <span class="hero-year">${formatYear(movie.release_date)}</span>
+      </div>
+      <h1 class="hero-title">${escHtml(movie.title)}</h1>
+      ${tagline ? `<p class="hero-tagline">${escHtml(tagline)}</p>` : ''}
+      <p class="hero-overview">${movie.overview ? escHtml(movie.overview.substring(0, 180)) + '…' : ''}</p>
+      <div class="hero-buttons">
+        <button class="btn-primary" onclick="openModal(${movie.id},'movie')">▶ View Details</button>
+        <button class="btn-secondary hero-watchlist-btn${inWL ? ' active' : ''}" id="heroWatchlistBtn"
+                onclick="toggleHeroWatchlist(${movie.id})">
+          ${inWL ? '✓ In Watchlist' : '🔖 Add to Watchlist'}
+        </button>
+      </div>
+      <div class="hero-dots">
+        ${state.heroMovies.map((_, i) => `<span class="hero-dot${i === state.heroIndex ? ' active' : ''}" onclick="jumpToHero(${i})"></span>`).join('')}
+      </div>`;
+    
+    heroContent.style.opacity = '1';
+    heroContent.style.transform = 'translateY(0)';
+  }, 400);
+}
+
+function startHeroTimer() {
+  if (state.heroTimer) clearInterval(state.heroTimer);
+  state.heroTimer = setInterval(() => {
+    state.heroIndex = (state.heroIndex + 1) % state.heroMovies.length;
+    renderHero();
+  }, 10000);
+}
+
+function jumpToHero(index) {
+  state.heroIndex = index;
+  renderHero();
+  startHeroTimer();
+}
+
+window.jumpToHero = jumpToHero;
 
 async function loadRow(rowId, endpoint, params = {}, isTV = false) {
   const row = document.getElementById(rowId);
