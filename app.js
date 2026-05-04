@@ -3,7 +3,7 @@
 // ============================================================
 
 // === CONFIG ===
-const API_KEY        = 'MY_TMDB_API_KEY';
+const API_KEY        = typeof ENV !== 'undefined' ? ENV.TMDB_API_KEY : 'YOUR_API_KEY_HERE';
 const BASE_URL       = 'https://api.themoviedb.org/3';
 const IMG_BASE       = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE  = 'https://image.tmdb.org/t/p/original';
