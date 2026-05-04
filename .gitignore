@@ -1,5 +1,9 @@
-env.js
-.DS_Store
-node_modules/
-dist/
+node_modules
+dist
 .env
+.env.local
+.env.*.local
+env.js
+
+# OS files
+.DS_Store
