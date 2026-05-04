@@ -4,9 +4,9 @@
 
 // === CONFIG ===
 const API_KEY        = import.meta.env?.VITE_TMDB_API_KEY || '';
-const BASE_URL       = 'https://api.themoviedb.org/3';
-const IMG_BASE       = 'https://image.tmdb.org/t/p/w500';
-const BACKDROP_BASE  = 'https://image.tmdb.org/t/p/original';
+const BASE_URL       = 'https://corsproxy.io/?https://api.themoviedb.org/3';
+const IMG_BASE       = 'https://corsproxy.io/?https://image.tmdb.org/t/p/w500';
+const BACKDROP_BASE  = 'https://corsproxy.io/?https://image.tmdb.org/t/p/original';
 const PLACEHOLDER_POSTER   = 'https://placehold.co/500x750/1a1a1a/555?text=No+Poster';
 const PLACEHOLDER_BACKDROP = 'https://placehold.co/1280x720/1a1a1a/555?text=No+Backdrop';
 const PLACEHOLDER_AVATAR   = 'https://placehold.co/185x278/1a1a1a/555?text=No+Photo';
