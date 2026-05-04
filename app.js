@@ -609,6 +609,7 @@ async function openModal(id, type = 'movie') {
   const data = await apiFetch(`/${type}/${id}`, { append_to_response: 'videos,credits,release_dates' });
   if (!data) {
     inner.innerHTML = '<p class="modal-error">Could not load details. Please try again.</p>';
+    toggleBodyScroll(false); // Fix: Unlock scroll on failure
     return;
   }
 
@@ -1417,46 +1418,50 @@ async function init() {
     alert('API Key is missing. Please check your .env file and restart the server.');
   }
 
-  initTheme();
-  initNavbar();
-  initBackToTop();
-  initSearch();
-  initFilters();
-  initModal();
-  initMoodPicker();
-  initClearHistory();
-  initKeyboard();
-  setupRowArrows();
+  try {
+    initTheme();
+    initNavbar();
+    initBackToTop();
+    initSearch();
+    initFilters();
+    initModal();
+    initMoodPicker();
+    initClearHistory();
+    initKeyboard();
+    setupRowArrows();
 
-  document.getElementById('surpriseBtn').addEventListener('click', surpriseMe);
+    document.getElementById('surpriseBtn').addEventListener('click', surpriseMe);
 
-  // Compare modal: close on backdrop click
-  document.getElementById('compareModal').addEventListener('click', e => {
-    if (e.target.id === 'compareModal') closeCompare();
-  });
+    // Compare modal: close on backdrop click
+    document.getElementById('compareModal').addEventListener('click', e => {
+      if (e.target.id === 'compareModal') closeCompare();
+    });
 
-  // Genre quiz modal: close on backdrop click only after quiz done
-  document.getElementById('quizModal').addEventListener('click', e => {
-    if (e.target.id === 'quizModal' && lsGet(LS.QUIZ_DONE)) {
-      document.getElementById('quizModal').classList.remove('open');
+    // Genre quiz modal: close on backdrop click only after quiz done
+    document.getElementById('quizModal').addEventListener('click', e => {
+      if (e.target.id === 'quizModal' && lsGet(LS.QUIZ_DONE)) {
+        document.getElementById('quizModal').classList.remove('open');
+      }
+    });
+
+    // Load genres (needed for quiz + filters)
+    await loadGenres();
+
+    // Render saved search history
+    renderSearchHistory();
+
+    // Show genre quiz on first visit
+    if (!lsGet(LS.QUIZ_DONE)) {
+      setTimeout(showQuiz, 800);
+    } else {
+      loadPreferredGenreRows();
     }
-  });
 
-  // Load genres (needed for quiz + filters)
-  await loadGenres();
-
-  // Render saved search history
-  renderSearchHistory();
-
-  // Show genre quiz on first visit
-  if (!lsGet(LS.QUIZ_DONE)) {
-    setTimeout(showQuiz, 800);
-  } else {
-    loadPreferredGenreRows();
+    // Load all home content
+    await loadAllHomeSections();
+  } catch (err) {
+    console.error('[CineMatch] Initialization failed:', err);
   }
-
-  // Load all home content
-  await loadAllHomeSections();
 }
 
 document.addEventListener('DOMContentLoaded', init);
