@@ -1427,3 +1427,17 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Expose functions to window for HTML onclick attributes (Vite/ESM scoping fix)
+window.showHome         = showHome;
+window.showWatchlist    = showWatchlist;
+window.showFavourites   = showFavourites;
+window.closeMobileMenu  = closeMobileMenu;
+window.retrySearch      = retrySearch;
+window.renderWatchlist  = renderWatchlist;
+window.renderFavourites = renderFavourites;
+window.exportWatchlist  = exportWatchlist;
+window.exportFavourites = exportFavourites;
+window.closeCompare     = closeCompare;
+window.openCompare      = openCompare;
+window.clearCompare     = clearCompare;
