@@ -47,20 +47,35 @@ const LS = {
 // ============================================================
 
 async function apiFetch(endpoint, params = {}) {
-  const url = new URL(`${BASE_URL}${endpoint}`);
-  url.searchParams.set('api_key', API_KEY);
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== '' && v !== null && v !== undefined) url.searchParams.set(k, v);
-  }
-  console.log('[CineMatch] Fetching:', endpoint, 'with key:', API_KEY?.substring(0, 5) + '...');
+  const buildUrl = (baseUrl) => {
+    const url = new URL(`${baseUrl}${endpoint}`);
+    url.searchParams.set('api_key', API_KEY);
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== '' && v !== null && v !== undefined) url.searchParams.set(k, v);
+    }
+    return url.toString();
+  };
+
+  const primaryUrl = buildUrl(BASE_URL);
+  console.log('[CineMatch] Fetching:', endpoint);
+
   try {
-    const res = await fetch(url.toString());
-    console.log('[CineMatch] Response status:', res.status);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    // Try primary first
+    const res = await fetch(primaryUrl);
+    if (res.ok) return await res.json();
+    throw new Error(`Primary failed with ${res.status}`);
   } catch (err) {
-    console.error('[CineMatch] API Error:', endpoint, err.message);
-    return null;
+    console.warn('[CineMatch] Primary API failed, trying proxy...', err.message);
+    try {
+      // Fallback to proxy
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(primaryUrl)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error(`Proxy failed with ${res.status}`);
+      return await res.json();
+    } catch (proxyErr) {
+      console.error('[CineMatch] Both API and Proxy failed:', proxyErr.message);
+      return null;
+    }
   }
 }
 
@@ -1459,3 +1474,8 @@ window.exportFavourites = exportFavourites;
 window.closeCompare     = closeCompare;
 window.openCompare      = openCompare;
 window.clearCompare     = clearCompare;
+window.closeModal       = closeModal;
+window.toggleModalWatchlist = toggleModalWatchlist;
+window.toggleModalFavourite = toggleModalFavourite;
+window.shareMovie       = shareMovie;
+window.filterByGenre    = filterByGenre;
