@@ -64,6 +64,11 @@ async function apiFetch(endpoint, params = {}) {
   }
 }
 
+/** Lock/Unlock body scroll */
+function toggleBodyScroll(lock) {
+  document.body.style.overflow = lock ? 'hidden' : '';
+}
+
 // ============================================================
 // === RENDER FUNCTIONS ===
 // ============================================================
@@ -161,7 +166,10 @@ function createMovieCard(movie, { isTV = false, showCompare = true } = {}) {
       if (act === 'watchlist') toggleWatchlist(movie, btn);
       else if (act === 'favourite') toggleFavourite(movie, btn);
       else if (act === 'watched') toggleWatched(id, card, btn);
-      else if (act === 'compare') toggleCompare(movie, btn);
+      else if (act === 'compare') {
+        movie.media_type = isTV ? 'tv' : 'movie';
+        toggleCompare(movie, btn);
+      }
     });
   });
 
@@ -581,7 +589,7 @@ async function openModal(id, type = 'movie') {
       </div>
     </div>`;
   modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
+  toggleBodyScroll(true);
 
   const data = await apiFetch(`/${type}/${id}`, { append_to_response: 'videos,credits,release_dates' });
   if (!data) {
@@ -745,7 +753,7 @@ function closeModal() {
   const iframe = modal.querySelector('iframe');
   if (iframe) { const s = iframe.src; iframe.src = ''; iframe.src = s; }
   modal.classList.remove('active');
-  document.body.style.overflow = '';
+  toggleBodyScroll(false);
 }
 
 function initModal() {
@@ -1005,6 +1013,7 @@ function calcScore(movie, preferredGenreIds = []) {
 // Genre quiz
 function showQuiz() {
   document.getElementById('quizModal').classList.add('active');
+  toggleBodyScroll(true);
 }
 
 function renderQuizGenres() {
@@ -1037,6 +1046,7 @@ function renderQuizGenres() {
     lsSet(LS.GENRE_PREFS, selected);
     lsSet(LS.QUIZ_DONE, true);
     document.getElementById('quizModal').classList.remove('active');
+    toggleBodyScroll(false);
     showToast('Preferences saved! 🎬');
     loadPreferredGenreRows();
   };
@@ -1139,11 +1149,12 @@ async function openCompare() {
   const modal = document.getElementById('compareModal');
   const wrap  = document.getElementById('compareTableWrap');
   modal.classList.add('active');
+  toggleBodyScroll(true);
   wrap.innerHTML = '<div class="compare-loading">Loading comparison…</div>';
 
   const [a, b] = await Promise.all([
-    apiFetch(`/movie/${state.compareMovies[0].id}`),
-    apiFetch(`/movie/${state.compareMovies[1].id}`),
+    apiFetch(`/${state.compareMovies[0].media_type || 'movie'}/${state.compareMovies[0].id}`),
+    apiFetch(`/${state.compareMovies[1].media_type || 'movie'}/${state.compareMovies[1].id}`),
   ]);
 
   if (!a || !b) { wrap.innerHTML = '<p class="modal-error">Could not load data.</p>'; return; }
@@ -1155,13 +1166,12 @@ async function openCompare() {
     ['Poster',
      `<img src="${imgA}" style="width:72px;border-radius:6px" onerror="this.src='${PLACEHOLDER_POSTER}'" />`,
      `<img src="${imgB}" style="width:72px;border-radius:6px" onerror="this.src='${PLACEHOLDER_POSTER}'" />`],
-    ['Title',       escHtml(a.title),             escHtml(b.title)],
-    ['Release',     a.release_date || 'N/A',       b.release_date || 'N/A'],
+    ['Title',       escHtml(a.title || a.name),   escHtml(b.title || b.name)],
+    ['Release',     a.release_date || a.first_air_date || 'N/A', b.release_date || b.first_air_date || 'N/A'],
     ['Rating',      `★ ${a.vote_average?.toFixed(1) ?? 'N/A'}`, `★ ${b.vote_average?.toFixed(1) ?? 'N/A'}`],
     ['Votes',       a.vote_count?.toLocaleString() ?? 'N/A', b.vote_count?.toLocaleString() ?? 'N/A'],
-    ['Runtime',     formatRuntime(a.runtime),      formatRuntime(b.runtime)],
-    ['Budget',      formatMoney(a.budget),          formatMoney(b.budget)],
-    ['Revenue',     formatMoney(a.revenue),         formatMoney(b.revenue)],
+    ['Runtime',     formatRuntime(a.runtime || (a.episode_run_time ? a.episode_run_time[0] : 0)),
+                    formatRuntime(b.runtime || (b.episode_run_time ? b.episode_run_time[0] : 0))],
     ['Popularity',  Math.round(a.popularity || 0),  Math.round(b.popularity || 0)],
     ['Genres',      (a.genres || []).map(g => g.name).join(', ') || 'N/A',
                     (b.genres || []).map(g => g.name).join(', ') || 'N/A'],
@@ -1192,6 +1202,7 @@ async function openCompare() {
 
 function closeCompare() {
   document.getElementById('compareModal').classList.remove('active');
+  toggleBodyScroll(false);
 }
 
 // Share
