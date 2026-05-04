@@ -3,7 +3,7 @@
 // ============================================================
 
 // === CONFIG ===
-const API_KEY        = import.meta.env.VITE_TMDB_API_KEY;
+const API_KEY        = import.meta.env?.VITE_TMDB_API_KEY || '';
 const BASE_URL       = 'https://api.themoviedb.org/3';
 const IMG_BASE       = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE  = 'https://image.tmdb.org/t/p/original';
@@ -52,8 +52,10 @@ async function apiFetch(endpoint, params = {}) {
   for (const [k, v] of Object.entries(params)) {
     if (v !== '' && v !== null && v !== undefined) url.searchParams.set(k, v);
   }
+  console.log('[CineMatch] Fetching:', endpoint, 'with key:', API_KEY?.substring(0, 5) + '...');
   try {
     const res = await fetch(url.toString());
+    console.log('[CineMatch] Response status:', res.status);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -1384,6 +1386,11 @@ function initKeyboard() {
 }
 
 async function init() {
+  if (!API_KEY) {
+    console.error('[CineMatch] Critical: TMDB API Key is missing! Check your .env file.');
+    alert('API Key is missing. Please check your .env file and restart the server.');
+  }
+
   initTheme();
   initNavbar();
   initBackToTop();
