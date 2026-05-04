@@ -57,7 +57,7 @@ async function apiFetch(endpoint, params = {}) {
   };
 
   const primaryUrl = buildUrl(BASE_URL);
-  console.log('[CineMatch] Fetching:', endpoint);
+  console.log('[CineBench] Fetching:', endpoint);
 
   try {
     // Try primary first
@@ -65,7 +65,7 @@ async function apiFetch(endpoint, params = {}) {
     if (res.ok) return await res.json();
     throw new Error(`Primary failed with ${res.status}`);
   } catch (err) {
-    console.warn('[CineMatch] Primary API failed, trying proxy...', err.message);
+    console.warn('[CineBench] Primary API failed, trying proxy...', err.message);
     try {
       // Fallback to proxy
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(primaryUrl)}`;
@@ -73,7 +73,7 @@ async function apiFetch(endpoint, params = {}) {
       if (!res.ok) throw new Error(`Proxy failed with ${res.status}`);
       return await res.json();
     } catch (proxyErr) {
-      console.error('[CineMatch] Both API and Proxy failed:', proxyErr.message);
+      console.error('[CineBench] Both API and Proxy failed:', proxyErr.message);
       return null;
     }
   }
@@ -1288,7 +1288,7 @@ function lsGet(key) {
 
 function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); }
-  catch (e) { console.warn('[CineMatch] localStorage write failed:', e); }
+  catch (e) { console.warn('[CineBench] localStorage write failed:', e); }
 }
 
 function escHtml(str) {
@@ -1454,7 +1454,7 @@ function initKeyboard() {
 
 async function init() {
   if (!API_KEY) {
-    console.error('[CineMatch] Critical: TMDB API Key is missing! Check your .env file.');
+    console.error('[CineBench] Critical: TMDB API Key is missing! Check your .env file.');
     alert('API Key is missing. Please check your .env file and restart the server.');
   }
 
