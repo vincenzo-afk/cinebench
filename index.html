@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineMatch — Your Cinema Companion</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-logo" href="#" onclick="showHome()">
+        <span class="logo-icon">▶</span>
+        <span class="logo-text">Cine<em>Match</em></span>
+      </a>
+
+      <div class="nav-search-wrap">
+        <input class="nav-search" id="navSearch" type="text" placeholder="Search movies, shows…" autocomplete="off" />
+        <button class="search-clear" id="searchClear" aria-label="Clear search">✕</button>
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+
+      <div class="nav-links">
+        <a href="#" class="nav-link active" id="linkHome" onclick="showHome()">Home</a>
+        <a href="#" class="nav-link" id="linkWatchlist" onclick="showWatchlist()">Watchlist</a>
+        <a href="#" class="nav-link" id="linkFavourites" onclick="showFavourites()">Favourites</a>
+      </div>
+
+      <div class="nav-controls">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+          <span class="theme-icon">☀️</span>
+        </button>
+        <button class="nav-hamburger" id="navHamburger" aria-label="Menu">☰</button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#" class="nav-link" onclick="showHome();closeMobileMenu()">Home</a>
+      <a href="#" class="nav-link" onclick="showWatchlist();closeMobileMenu()">Watchlist</a>
+      <a href="#" class="nav-link" onclick="showFavourites();closeMobileMenu()">Favourites</a>
+    </div>
+  </nav>
+
+  <!-- ===== SEARCH HISTORY CHIPS ===== -->
+  <div class="search-history-bar" id="searchHistoryBar" style="display:none">
+    <span class="history-label">Recent:</span>
+    <div class="history-chips" id="historyChips"></div>
+    <button class="clear-history" id="clearHistory">Clear all</button>
+  </div>
+
+  <!-- ===== HOME VIEW ===== -->
+  <div id="homeView">
+
+    <!-- Hero Banner -->
+    <section class="hero" id="heroSection">
+      <div class="hero-backdrop" id="heroBackdrop"></div>
+      <div class="hero-gradient"></div>
+      <div class="hero-content" id="heroContent">
+        <div class="hero-skeleton">
+          <div class="skel skel-title"></div>
+          <div class="skel skel-sub"></div>
+          <div class="skel skel-btns"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recently Viewed -->
+    <div class="row-section" id="recentlyViewedSection" style="display:none">
+      <h2 class="row-title">🕐 Recently Viewed</h2>
+      <div class="scroll-row-wrap">
+        <button class="row-arrow row-arrow-left" data-row="recentlyViewed">‹</button>
+        <div class="scroll-row" id="recentlyViewedRow"></div>
+        <button class="row-arrow row-arrow-right" data-row="recentlyViewed">›</button>
+      </div>
+    </div>
+
+    <!-- Mood Picker -->
+    <section class="mood-section">
+      <h2 class="row-title">🎭 What's Your Mood?</h2>
+      <div class="mood-grid" id="moodGrid">
+        <button class="mood-btn" data-genre="35" data-emoji="😂">😂 Comedy</button>
+        <button class="mood-btn" data-genre="27" data-emoji="😱">😱 Horror</button>
+        <button class="mood-btn" data-genre="10749" data-emoji="❤️">❤️ Romance</button>
+        <button class="mood-btn" data-genre="28" data-emoji="💥">💥 Action</button>
+        <button class="mood-btn" data-genre="53" data-emoji="🤔">🤔 Thriller</button>
+        <button class="mood-btn" data-genre="878" data-emoji="🧪">🧪 Sci-Fi</button>
+        <button class="mood-btn" data-genre="10751" data-emoji="🧸">🧸 Family</button>
+        <button class="mood-btn" data-genre="18" data-emoji="😢">😢 Drama</button>
+      </div>
+      <button class="surprise-btn" id="surpriseBtn">🎲 Surprise Me!</button>
+    </section>
+
+    <!-- Horizontal Rows -->
+    <div id="homeRows">
+      <div class="row-section">
+        <h2 class="row-title">🔥 Trending Today</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="trendingDay">‹</button>
+          <div class="scroll-row" id="trendingDayRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="trendingDay">›</button>
+        </div>
+      </div>
+      <div class="row-section">
+        <h2 class="row-title">🌟 Trending This Week</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="trendingWeek">‹</button>
+          <div class="scroll-row" id="trendingWeekRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="trendingWeek">›</button>
+        </div>
+      </div>
+      <div class="row-section">
+        <h2 class="row-title">🎬 Now Playing</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="nowPlaying">‹</button>
+          <div class="scroll-row" id="nowPlayingRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="nowPlaying">›</button>
+        </div>
+      </div>
+      <div class="row-section">
+        <h2 class="row-title">⭐ Top Rated</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="topRated">‹</button>
+          <div class="scroll-row" id="topRatedRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="topRated">›</button>
+        </div>
+      </div>
+      <div class="row-section">
+        <h2 class="row-title">📅 Upcoming Movies</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="upcoming">‹</button>
+          <div class="scroll-row" id="upcomingRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="upcoming">›</button>
+        </div>
+      </div>
+      <div class="row-section">
+        <h2 class="row-title">📺 Popular TV Shows</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="tvPopular">‹</button>
+          <div class="scroll-row" id="tvPopularRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="tvPopular">›</button>
+        </div>
+      </div>
+
+      <!-- Because You Watched -->
+      <div class="row-section" id="becauseYouWatchedSection" style="display:none">
+        <h2 class="row-title" id="becauseYouWatchedTitle">🎯 Because You Watched…</h2>
+        <div class="scroll-row-wrap">
+          <button class="row-arrow row-arrow-left" data-row="becauseYouWatched">‹</button>
+          <div class="scroll-row" id="becauseYouWatchedRow"></div>
+          <button class="row-arrow row-arrow-right" data-row="becauseYouWatched">›</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#homeView -->
+
+  <!-- ===== SEARCH RESULTS VIEW ===== -->
+  <div id="searchView" style="display:none">
+    <div class="view-header">
+      <h1 class="view-title" id="searchViewTitle">Search Results</h1>
+      <button class="back-btn" onclick="showHome()">← Back</button>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="filter-toggle-wrap">
+      <button class="filter-toggle-btn" id="filterToggleBtn">⚙ Filters</button>
+    </div>
+    <div class="filter-panel" id="filterPanel" style="display:none">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Genres</label>
+          <div class="genre-multi" id="genreMulti"></div>
+        </div>
+        <div class="filter-group">
+          <label>Year From</label>
+          <input type="number" id="filterYearFrom" placeholder="e.g. 2000" min="1900" max="2030" />
+        </div>
+        <div class="filter-group">
+          <label>Year To</label>
+          <input type="number" id="filterYearTo" placeholder="e.g. 2024" min="1900" max="2030" />
+        </div>
+        <div class="filter-group">
+          <label>Min Rating: <span id="ratingSliderVal">0</span></label>
+          <input type="range" id="filterRating" min="0" max="10" step="0.5" value="0" />
+        </div>
+        <div class="filter-group">
+          <label>Sort By</label>
+          <select id="filterSort">
+            <option value="popularity.desc">Popularity</option>
+            <option value="vote_average.desc">Rating</option>
+            <option value="release_date.desc">Release Date</option>
+            <option value="revenue.desc">Revenue</option>
+          </select>
+        </div>
+      </div>
+      <button class="apply-filters-btn" id="applyFiltersBtn">Apply Filters</button>
+    </div>
+
+    <div class="movies-grid" id="searchGrid"></div>
+    <div id="searchLoader" class="section-loader" style="display:none">Loading more…</div>
+    <div id="searchEmpty" class="empty-state" style="display:none">
+      <div class="empty-icon">🎬</div>
+      <h3>No results found</h3>
+      <p>Try a different search term or adjust your filters.</p>
+      <button class="retry-btn" onclick="retrySearch()">Retry</button>
+    </div>
+  </div>
+
+  <!-- ===== WATCHLIST VIEW ===== -->
+  <div id="watchlistView" style="display:none">
+    <div class="view-header">
+      <h1 class="view-title">🔖 My Watchlist</h1>
+      <div class="watchlist-controls">
+        <select id="watchlistSort" onchange="renderWatchlist()">
+          <option value="dateAdded">Date Added</option>
+          <option value="rating">Rating</option>
+          <option value="title">Title</option>
+          <option value="year">Release Year</option>
+        </select>
+        <button class="export-btn" onclick="exportWatchlist()">⬇ Export JSON</button>
+        <button class="back-btn" onclick="showHome()">← Back</button>
+      </div>
+    </div>
+    <div class="movies-grid" id="watchlistGrid"></div>
+    <div class="empty-state" id="watchlistEmpty" style="display:none">
+      <div class="empty-icon">🎞</div>
+      <h3>Your watchlist is empty</h3>
+      <p>Browse movies and click the bookmark icon to save them here.</p>
+    </div>
+  </div>
+
+  <!-- ===== FAVOURITES VIEW ===== -->
+  <div id="favouritesView" style="display:none">
+    <div class="view-header">
+      <h1 class="view-title">❤️ My Favourites</h1>
+      <div class="watchlist-controls">
+        <select id="favouritesSort" onchange="renderFavourites()">
+          <option value="dateAdded">Date Added</option>
+          <option value="rating">Rating</option>
+          <option value="title">Title</option>
+          <option value="year">Release Year</option>
+        </select>
+        <button class="export-btn" onclick="exportFavourites()">⬇ Export JSON</button>
+        <button class="back-btn" onclick="showHome()">← Back</button>
+      </div>
+    </div>
+    <div class="movies-grid" id="favouritesGrid"></div>
+    <div class="empty-state" id="favouritesEmpty" style="display:none">
+      <div class="empty-icon">💔</div>
+      <h3>No favourites yet</h3>
+      <p>Click the heart icon on any movie to add it here.</p>
+    </div>
+  </div>
+
+  <!-- ===== MOVIE DETAIL MODAL ===== -->
+  <div class="modal-overlay" id="movieModal" role="dialog" aria-modal="true" aria-label="Movie details">
+    <div class="modal-box" id="modalBox">
+      <button class="modal-close" id="modalClose" aria-label="Close modal">✕</button>
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-inner" id="modalInner">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMPARISON MODAL ===== -->
+  <div class="modal-overlay" id="compareModal" role="dialog" aria-modal="true" aria-label="Compare movies">
+    <div class="modal-box modal-box--compare" id="compareBox">
+      <button class="modal-close" onclick="closeCompare()">✕</button>
+      <h2 class="compare-title">📊 Movie Comparison</h2>
+      <div class="compare-table-wrap" id="compareTableWrap"></div>
+    </div>
+  </div>
+
+  <!-- ===== GENRE QUIZ MODAL ===== -->
+  <div class="modal-overlay" id="quizModal" role="dialog" aria-modal="true" aria-label="Genre preferences">
+    <div class="modal-box modal-box--quiz" id="quizBox">
+      <h2 class="quiz-title">🎬 Welcome to CineMatch!</h2>
+      <p class="quiz-sub">Pick 3 genres you love so we can personalize your experience.</p>
+      <div class="quiz-genres" id="quizGenres"></div>
+      <div class="quiz-selected" id="quizSelected">Selected: <strong>0</strong>/3</div>
+      <button class="quiz-submit" id="quizSubmit" disabled>Let's Go! →</button>
+    </div>
+  </div>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ===== BACK TO TOP ===== -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">▲</button>
+
+  <!-- ===== COMPARE BAR ===== -->
+  <div class="compare-bar" id="compareBar" style="display:none">
+    <span id="compareBarText">Compare: 0/2 selected</span>
+    <button class="compare-now-btn" id="compareNowBtn" disabled onclick="openCompare()">Compare Now</button>
+    <button class="compare-clear-btn" onclick="clearCompare()">✕ Clear</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
