@@ -603,7 +603,7 @@ async function openModal(id, type = 'movie') {
         <div class="skel skel-sub" style="width:60%"></div>
       </div>
     </div>`;
-  modal.classList.add('active');
+  modal.classList.add('open');
   toggleBodyScroll(true);
 
   const data = await apiFetch(`/${type}/${id}`, { append_to_response: 'videos,credits,release_dates' });
@@ -767,7 +767,7 @@ function closeModal() {
   const modal  = document.getElementById('movieModal');
   const iframe = modal.querySelector('iframe');
   if (iframe) { const s = iframe.src; iframe.src = ''; iframe.src = s; }
-  modal.classList.remove('active');
+  modal.classList.remove('open');
   toggleBodyScroll(false);
 }
 
@@ -1027,7 +1027,7 @@ function calcScore(movie, preferredGenreIds = []) {
 
 // Genre quiz
 function showQuiz() {
-  document.getElementById('quizModal').classList.add('active');
+  document.getElementById('quizModal').classList.add('open');
   toggleBodyScroll(true);
 }
 
@@ -1060,7 +1060,7 @@ function renderQuizGenres() {
   submitBtn.onclick = () => {
     lsSet(LS.GENRE_PREFS, selected);
     lsSet(LS.QUIZ_DONE, true);
-    document.getElementById('quizModal').classList.remove('active');
+    document.getElementById('quizModal').classList.remove('open');
     toggleBodyScroll(false);
     showToast('Preferences saved! 🎬');
     loadPreferredGenreRows();
@@ -1163,7 +1163,7 @@ async function openCompare() {
 
   const modal = document.getElementById('compareModal');
   const wrap  = document.getElementById('compareTableWrap');
-  modal.classList.add('active');
+  modal.classList.add('open');
   toggleBodyScroll(true);
   wrap.innerHTML = '<div class="compare-loading">Loading comparison…</div>';
 
@@ -1216,7 +1216,7 @@ async function openCompare() {
 }
 
 function closeCompare() {
-  document.getElementById('compareModal').classList.remove('active');
+  document.getElementById('compareModal').classList.remove('open');
   toggleBodyScroll(false);
 }
 
@@ -1438,7 +1438,7 @@ async function init() {
   // Genre quiz modal: close on backdrop click only after quiz done
   document.getElementById('quizModal').addEventListener('click', e => {
     if (e.target.id === 'quizModal' && lsGet(LS.QUIZ_DONE)) {
-      document.getElementById('quizModal').classList.remove('active');
+      document.getElementById('quizModal').classList.remove('open');
     }
   });
 
