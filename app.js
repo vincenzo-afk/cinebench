@@ -4,6 +4,10 @@
 
 // === CONFIG ===
 const API_KEY        = import.meta.env?.VITE_TMDB_API_KEY || '';
+
+// Demo mode: self-contained mock so the app can be previewed without a TMDB key.
+// Enable with ?demo (e.g. /?demo) — never used in production.
+const DEMO_MODE = typeof location !== 'undefined' && new URLSearchParams(location.search).has('demo');
 const BASE_URL       = 'https://api.tmdb.org/3';
 const IMG_BASE       = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE  = 'https://image.tmdb.org/t/p/original';
@@ -40,13 +44,97 @@ const LS = {
   THEME           : 'cm_theme',
   RECENTLY_VIEWED : 'cm_recently_viewed',
   QUIZ_DONE       : 'cm_quiz_done',
+  COMPARE         : 'cm_compare',
 };
 
 // ============================================================
 // === API HELPERS ===
 // ============================================================
 
+// Demo-mode mock: returns plausible fake TMDB-shaped data when no key is configured.
+// Used only with ?demo for previews; live API is always preferred when a key exists.
+const DEMO_MOVIES = [
+  { id: 278,  title: 'The Shawshank Redemption', vote_average: 8.7, vote_count: 26000, popularity: 120, release_date: '1994-09-23', runtime: 142, genre_ids: [18], overview: 'An enduring tale of hope and friendship inside a maximum-security prison.', media_type: 'movie' },
+  { id: 238,  title: 'The Godfather',             vote_average: 8.7, vote_count: 19000, popularity: 105, release_date: '1972-03-14', runtime: 175, genre_ids: [18, 80], overview: 'The aging patriarch of an organized crime dynasty transfers control to his reluctant son.', media_type: 'movie' },
+  { id: 155,  title: 'The Dark Knight',           vote_average: 8.5, vote_count: 31000, popularity: 150, release_date: '2008-07-16', runtime: 152, genre_ids: [28, 80, 18], overview: 'Batman raises the stakes in his war on crime against the Joker.', media_type: 'movie' },
+  { id: 550,  title: 'Fight Club',                vote_average: 8.4, vote_count: 27000, popularity: 95, release_date: '1999-10-15', runtime: 139, genre_ids: [18], overview: 'An insomniac office worker forms an underground fight club.', media_type: 'movie' },
+  { id: 13,   title: 'Forrest Gump',              vote_average: 8.5, vote_count: 26000, popularity: 88, release_date: '1994-06-23', runtime: 142, genre_ids: [35, 18, 10749], overview: 'The presidencies of Kennedy and Johnson through the eyes of an Alabama man.', media_type: 'movie' },
+  { id: 680,  title: 'Pulp Fiction',              vote_average: 8.5, vote_count: 26000, popularity: 102, release_date: '1994-09-10', runtime: 154, genre_ids: [80, 53], overview: 'The lives of two mob hitmen, a boxer, and a pair of diner bandits intertwine.', media_type: 'movie' },
+  { id: 603,  title: 'The Matrix',                vote_average: 8.2, vote_count: 24000, popularity: 98, release_date: '1999-03-30', runtime: 136, genre_ids: [28, 878], overview: 'A hacker discovers the shocking truth about his reality.', media_type: 'movie' },
+  { id: 372058, title: 'Your Name.',              vote_average: 8.5, vote_count: 10000, popularity: 75, release_date: '2016-08-26', runtime: 106, genre_ids: [16, 10749, 18], overview: 'Two teenagers share a mysterious connection across time and space.', media_type: 'movie' },
+  { id: 76600,  title: 'Avatar: The Way of Water',vote_average: 7.6, vote_count: 8000,  popularity: 130, release_date: '2022-12-14', runtime: 192, genre_ids: [878, 12], overview: 'Jake Sully and Neytiri protect their family on Pandora.', media_type: 'movie' },
+  { id: 299536, title: 'Avengers: Infinity War',  vote_average: 8.2, vote_count: 28000, popularity: 140, release_date: '2018-04-25', runtime: 149, genre_ids: [12, 28, 878], overview: 'The Avengers must stop Thanos from collecting all six Infinity Stones.', media_type: 'movie' },
+];
+
+const DEMO_GENRES = [
+  { id: 28, name: 'Action' }, { id: 12, name: 'Adventure' }, { id: 16, name: 'Animation' },
+  { id: 35, name: 'Comedy' }, { id: 80, name: 'Crime' }, { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Family' }, { id: 27, name: 'Horror' }, { id: 10749, name: 'Romance' },
+  { id: 878, name: 'Science Fiction' }, { id: 53, name: 'Thriller' },
+];
+
+const DEMO_DETAIL = {
+  id: 278,
+  title: 'The Shawshank Redemption',
+  name: undefined,
+  vote_average: 8.7,
+  vote_count: 26000,
+  popularity: 120,
+  release_date: '1994-09-23',
+  first_air_date: undefined,
+  runtime: 142,
+  budget: 25000000,
+  revenue: 58300000,
+  original_language: 'en',
+  tagline: 'Fear can hold you prisoner. Hope can set you free.',
+  overview: 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
+  genres: DEMO_GENRES.filter(g => [18].includes(g.id)),
+  poster_path: null,
+  backdrop_path: null,
+  media_type: 'movie',
+  videos: { results: [{ key: '6hB3S9bIaco', site: 'YouTube', type: 'Trailer' }] },
+  credits: {
+    cast: [
+      { name: 'Tim Robbins',   character: 'Andy Dufresne', profile_path: null },
+      { name: 'Morgan Freeman',character: 'Ellis Boyd "Red" Redding', profile_path: null },
+      { name: 'Bob Gunton',    character: 'Warden Norton', profile_path: null },
+    ],
+  },
+  release_dates: { results: [{ iso_3166_1: 'US', release_dates: [{ certification: 'R' }] }] },
+};
+
+function demoFetch(endpoint, params = {}) {
+  const q = (params.query || '').toLowerCase();
+  let pool = [...DEMO_MOVIES];
+  if (q) pool = DEMO_MOVIES.filter(m => m.title.toLowerCase().includes(q));
+  const page = Number(params.page || 1);
+  // Genre list endpoint
+  if (endpoint === '/genre/movie/list') {
+    return Promise.resolve({ genres: DEMO_GENRES });
+  }
+  // Detail endpoints (e.g. /movie/278, /tv/1396) with optional append_to_response
+  const detailMatch = endpoint.match(/^\/(movie|tv)\/(\d+)$/);
+  if (detailMatch) {
+    const id = Number(detailMatch[2]);
+    const found = DEMO_MOVIES.find(m => m.id === id) || DEMO_MOVIES[0];
+    return Promise.resolve({ ...DEMO_DETAIL, ...found, id });
+  }
+  return Promise.resolve({
+    page,
+    total_pages: 1,
+    total_results: pool.length,
+    results: pool.map((m, i) => ({
+      ...m,
+      backdrop_path: null,
+      poster_path: null,
+      media_type: m.media_type,
+      _seed: (page - 1) * 10 + i,
+    })),
+  });
+}
+
 async function apiFetch(endpoint, params = {}) {
+  if (DEMO_MODE) return demoFetch(endpoint, params);
   const buildUrl = (baseUrl) => {
     const url = new URL(`${baseUrl}${endpoint}`);
     url.searchParams.set('api_key', API_KEY);
@@ -311,16 +399,19 @@ async function loadRow(rowId, endpoint, params = {}, isTV = false) {
   const row = document.getElementById(rowId);
   if (!row) return;
   renderSkeletons(row, 10);
-
   const data = await apiFetch(endpoint, params);
   row.innerHTML = '';
-
   if (!data?.results?.length) {
-    row.innerHTML = '<p class="row-error">Could not load content.</p>';
+    row.innerHTML = `<p class="row-error">Could not load content. <button class="retry-btn" onclick="retryRow('${rowId}', '${endpoint}', ${JSON.stringify(params)}, ${isTV})">Retry</button></p>`;
     return;
   }
   data.results.forEach(m => row.appendChild(createMovieCard(m, { isTV })));
 }
+// Retry a failed row (stored on window so inline onclick works from the module)
+function retryRow(rowId, endpoint, params, isTV) {
+  loadRow(rowId, endpoint, params, isTV);
+}
+window.retryRow = retryRow;
 
 function setupRowArrows() {
   document.querySelectorAll('.row-arrow').forEach(btn => {
@@ -395,7 +486,7 @@ function initSearch() {
 
   input.addEventListener('input', () => {
     const q = input.value.trim();
-    clearBtn.style.display = q ? 'flex' : 'none';
+    clearBtn.classList.toggle('visible', !!q);
     clearTimeout(state.searchDebounce);
     if (q.length < 2) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
     state.searchDebounce = setTimeout(() => showSearchDropdown(q), 400);
@@ -414,7 +505,7 @@ function initSearch() {
 
   clearBtn.addEventListener('click', () => {
     input.value = '';
-    clearBtn.style.display = 'none';
+    clearBtn.classList.remove('visible');
     dropdown.style.display = 'none';
   });
 
@@ -646,6 +737,9 @@ async function openModal(id, type = 'movie') {
   modal.classList.add('open');
   toggleBodyScroll(true);
 
+  // Track the opened modal's media type so modal action handlers (which can't
+  // accept params from inline onclick) use the right /movie or /tv endpoint.
+  state.modalType = type;
   const data = await apiFetch(`/${type}/${id}`, { append_to_response: 'videos,credits,release_dates' });
   if (!data) {
     inner.innerHTML = '<p class="modal-error">Could not load details. Please try again.</p>';
@@ -820,15 +914,16 @@ function initModal() {
 }
 
 // Modal watchlist / favourite helpers
+// NOTE: state.modalType tracks the last opened modal's media type (movie/tv),
+// since onclick handlers in the generated markup can't pass the type param.
 async function toggleModalWatchlist(id) {
   const wl  = lsGet(LS.WATCHLIST) || [];
   const idx = wl.findIndex(m => m.id === id);
   const btn = document.getElementById('modalWatchlistBtn');
-
   if (idx === -1) {
-    const d = await apiFetch(`/movie/${id}`);
+    const d = await apiFetch(`/${state.modalType || 'movie'}/${id}`);
     if (!d) return;
-    wl.push({ ...d, addedAt: Date.now() });
+    wl.push(stripForStorage({ ...d, addedAt: Date.now(), media_type: state.modalType || 'movie' }));
     lsSet(LS.WATCHLIST, wl);
     showToast('Added to Watchlist 🔖');
     if (btn) { btn.textContent = '✓ In Watchlist'; btn.classList.add('active'); }
@@ -848,11 +943,10 @@ async function toggleModalFavourite(id) {
   const favs = lsGet(LS.FAVOURITES) || [];
   const idx  = favs.findIndex(m => m.id === id);
   const btn  = document.getElementById('modalFavBtn');
-
   if (idx === -1) {
-    const d = await apiFetch(`/movie/${id}`);
+    const d = await apiFetch(`/${state.modalType || 'movie'}/${id}`);
     if (!d) return;
-    favs.push({ ...d, addedAt: Date.now() });
+    favs.push(stripForStorage({ ...d, addedAt: Date.now(), media_type: state.modalType || 'movie' }));
     lsSet(LS.FAVOURITES, favs);
     showToast('Added to Favourites ❤️');
     if (btn) { btn.textContent = '❤️ In Favourites'; btn.classList.add('active'); }
@@ -872,11 +966,10 @@ async function toggleHeroWatchlist(id) {
   const wl  = lsGet(LS.WATCHLIST) || [];
   const idx = wl.findIndex(m => m.id === id);
   const btn = document.getElementById('heroWatchlistBtn');
-
   if (idx === -1) {
-    const d = await apiFetch(`/movie/${id}`);
+    const d = await apiFetch(`/${state.modalType || 'movie'}/${id}`);
     if (!d) return;
-    wl.push({ ...d, addedAt: Date.now() });
+    wl.push(stripForStorage({ ...d, addedAt: Date.now(), media_type: state.modalType || 'movie' }));
     lsSet(LS.WATCHLIST, wl);
     showToast('Added to Watchlist 🔖');
     if (btn) { btn.textContent = '✓ In Watchlist'; btn.classList.add('active'); }
@@ -895,9 +988,8 @@ async function toggleHeroWatchlist(id) {
 function toggleWatchlist(movie, btn) {
   const wl  = lsGet(LS.WATCHLIST) || [];
   const idx = wl.findIndex(m => m.id === movie.id);
-
   if (idx === -1) {
-    wl.push({ ...movie, addedAt: Date.now() });
+    wl.push(stripForStorage({ ...movie, addedAt: Date.now() }));
     lsSet(LS.WATCHLIST, wl);
     btn?.classList.add('active');
     showToast('Added to Watchlist 🔖');
@@ -916,9 +1008,8 @@ function toggleWatchlist(movie, btn) {
 function toggleFavourite(movie, btn) {
   const favs = lsGet(LS.FAVOURITES) || [];
   const idx  = favs.findIndex(m => m.id === movie.id);
-
   if (idx === -1) {
-    favs.push({ ...movie, addedAt: Date.now() });
+    favs.push(stripForStorage({ ...movie, addedAt: Date.now() }));
     lsSet(LS.FAVOURITES, favs);
     btn?.classList.add('active');
     showToast('Added to Favourites ❤️');
@@ -977,22 +1068,50 @@ function renderWatchlist() {
   const grid   = document.getElementById('watchlistGrid');
   const empty  = document.getElementById('watchlistEmpty');
   const sortBy = document.getElementById('watchlistSort').value;
-  const list   = sortMovieList(lsGet(LS.WATCHLIST) || [], sortBy);
-
+    const list   = sortMovieList(lsGet(LS.WATCHLIST) || [], sortBy);
   grid.innerHTML = '';
   empty.style.display = list.length ? 'none' : 'flex';
   list.forEach(m => grid.appendChild(createMovieCard(m)));
+  renderStats();
 }
 
 function renderFavourites() {
   const grid   = document.getElementById('favouritesGrid');
   const empty  = document.getElementById('favouritesEmpty');
   const sortBy = document.getElementById('favouritesSort').value;
-  const list   = sortMovieList(lsGet(LS.FAVOURITES) || [], sortBy);
-
+    const list   = sortMovieList(lsGet(LS.FAVOURITES) || [], sortBy);
   grid.innerHTML = '';
   empty.style.display = list.length ? 'none' : 'flex';
   list.forEach(m => grid.appendChild(createMovieCard(m)));
+  renderStats();
+}
+
+// ===== Library stats (renders a compact stats panel in the watchlist header) =====
+function renderStats() {
+  const panel = document.getElementById('statsPanel');
+  if (!panel) return;
+  const watched   = lsGet(LS.WATCHED) || [];
+  const wl        = lsGet(LS.WATCHLIST) || [];
+  const favs      = lsGet(LS.FAVOURITES) || [];
+  const ratings   = lsGet(LS.RATINGS) || {};
+  const ratedKeys = Object.keys(ratings);
+  const avgRating = ratedKeys.length
+    ? (ratedKeys.reduce((sum, k) => sum + Number(ratings[k]), 0) / ratedKeys.length).toFixed(1)
+    : '–';
+  const watchedMinutes = watched.reduce((acc, id) => {
+    const movie = [...wl, ...favs].find(m => m.id === id);
+    const mins  = movie?.runtime || movie?.episode_run_time?.[0] || 0;
+    return acc + Number(mins || 0);
+  }, 0);
+  const hours = Math.floor(watchedMinutes / 60);
+  const mins  = watchedMinutes % 60;
+  const runtimeStr = watchedMinutes ? (hours ? `${hours}h${mins ? ` ${mins}m` : ''}` : `${mins}m`) : '–';
+  panel.innerHTML = `
+    <div class="stat-tile"><span class="stat-tile-val">${wl.length}</span><span class="stat-tile-label">In Watchlist</span></div>
+    <div class="stat-tile"><span class="stat-tile-val">${favs.length}</span><span class="stat-tile-label">Favourites</span></div>
+    <div class="stat-tile"><span class="stat-tile-val">${watched.length}</span><span class="stat-tile-label">Watched</span></div>
+    <div class="stat-tile"><span class="stat-tile-val">★ ${avgRating}</span><span class="stat-tile-label">Avg Rating</span></div>
+    <div class="stat-tile"><span class="stat-tile-val">🕐 ${runtimeStr}</span><span class="stat-tile-label">Watched Runtime</span></div>`;
 }
 
 function sortMovieList(list, sortBy) {
@@ -1017,6 +1136,43 @@ function exportFavourites() {
   downloadJSON(lsGet(LS.FAVOURITES) || [], 'cinematch-favourites.json');
   showToast('Favourites exported ⬇');
 }
+
+// Import a JSON list (export of the same format) into watchlist or favourites.
+// Entries are validated and merged by id — duplicates are skipped (keeping the newer entry).
+function importList(input, listType) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const lsKey = listType === 'favourites' ? LS.FAVOURITES : LS.WATCHLIST;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!Array.isArray(parsed)) throw new Error('Expected a JSON array of movies');
+      const valid = parsed.filter(m => m && m.id && (m.title || m.name));
+      if (!valid.length) throw new Error('No valid movie entries found in the file');
+      const existing = lsGet(lsKey) || [];
+      const existingById = new Map(existing.map(m => [m.id, m]));
+      valid.forEach(m => {
+        const e = existingById.get(m.id);
+        // Keep the newer entry on conflict (compare addedAt timestamps)
+        if (!e || (m.addedAt || 0) > (e.addedAt || 0)) {
+          existingById.set(m.id, { ...m, media_type: m.media_type || 'movie' });
+        }
+      });
+      const merged = [...existingById.values()];
+      lsSet(lsKey, merged);
+      if (listType === 'watchlist') { renderWatchlist(); showWatchlist(); }
+      else { renderFavourites(); showFavourites(); }
+      showToast(`Imported ${valid.length} items (${merged.length - existing.length} new, ${valid.length - (merged.length - existing.length)} duplicates skipped) 📥`);
+    } catch (err) {
+      console.error('[CineBench] Import failed:', err);
+      showToast('Import failed: ' + (err.message || 'invalid file'), 'error');
+    }
+    input.value = ''; // allow re-importing the same file
+  };
+  reader.readAsText(file);
+}
+window.importList = importList;
 
 function downloadJSON(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1169,12 +1325,29 @@ function filterByGenre(genreId, genreName) {
 // === COMPARE ===
 // ============================================================
 
+// Restore previously selected comparison pair across page reloads
+function restoreCompare() {
+  const saved = lsGet(LS.COMPARE) || [];
+  if (saved.length === 2) {
+    state.compareMovies = saved.slice(0, 2);
+    const bar = document.getElementById('compareBar');
+    bar.style.display = 'flex';
+    document.getElementById('compareBarText').textContent = 'Compare: 2/2 selected';
+    document.getElementById('compareNowBtn').disabled = false;
+    // Highlight the matching card buttons in the current view
+    document.querySelectorAll('.card-action-btn[data-action="compare"]').forEach(b => {
+      b.classList.toggle('active', state.compareMovies.some(m => m.id === Number(b.dataset.id)));
+    });
+  }
+}
+function persistCompare() {
+  lsSet(LS.COMPARE, state.compareMovies);
+}
 function toggleCompare(movie, btn) {
   const idx      = state.compareMovies.findIndex(m => m.id === movie.id);
   const bar      = document.getElementById('compareBar');
   const barText  = document.getElementById('compareBarText');
   const nowBtn   = document.getElementById('compareNowBtn');
-
   if (idx !== -1) {
     state.compareMovies.splice(idx, 1);
     btn?.classList.remove('active');
@@ -1186,17 +1359,18 @@ function toggleCompare(movie, btn) {
     state.compareMovies.push(movie);
     btn?.classList.add('active');
   }
-
   const count   = state.compareMovies.length;
   bar.style.display      = count > 0 ? 'flex' : 'none';
   barText.textContent    = `Compare: ${count}/2 selected`;
   nowBtn.disabled        = count !== 2;
+  persistCompare();
 }
 
 function clearCompare() {
   state.compareMovies = [];
   document.getElementById('compareBar').style.display = 'none';
   document.querySelectorAll('.card-action-btn[data-action="compare"]').forEach(b => b.classList.remove('active'));
+  persistCompare();
 }
 
 async function openCompare() {
@@ -1261,9 +1435,11 @@ function closeCompare() {
   toggleBodyScroll(false);
 }
 
-// Share
-async function shareMovie(id, title) {
-  const url = `https://www.themoviedb.org/movie/${id}`;
+// Share — mediaType falls back to state.modalType when shared from the modal,
+// since the inline onclick cannot pass the media type. 'movie' otherwise.
+async function shareMovie(id, title, mediaType) {
+  const type = mediaType || state.modalType || 'movie';
+  const url  = `https://www.themoviedb.org/${type}/${id}`;
   if (navigator.share) {
     try { await navigator.share({ title, url, text: `Check out "${title}"!` }); }
     catch { /* user cancelled */ }
@@ -1285,10 +1461,21 @@ function lsGet(key) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
   catch { return null; }
 }
-
 function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); }
   catch (e) { console.warn('[CineBench] localStorage write failed:', e); }
+}
+
+// Trim bulky TMDB fields before saving to localStorage to avoid quota limits
+// and keep stored lists portable (watchlist/favourites import works anywhere).
+function stripForStorage(movie) {
+  const {
+    videos, credits, similar, recommendations,
+    release_dates, belongs_to_collection, production_companies,
+    production_countries, spoken_languages, homepage,
+    imdb_id, status, original_title, original_name, ...rest
+  } = movie;
+  return rest;
 }
 
 function escHtml(str) {
@@ -1499,6 +1686,8 @@ async function init() {
 
     // Load all home content
     await loadAllHomeSections();
+    // Restore the last saved comparison pair
+    restoreCompare();
   } catch (err) {
     console.error('[CineMatch] Initialization failed:', err);
   }

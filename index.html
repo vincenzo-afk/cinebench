@@ -216,6 +216,7 @@
   <div id="watchlistView" style="display:none">
     <div class="view-header">
       <h1 class="view-title">🔖 My Watchlist</h1>
+      <div class="stats-panel" id="statsPanel"></div>
       <div class="watchlist-controls">
         <select id="watchlistSort" onchange="renderWatchlist()">
           <option value="dateAdded">Date Added</option>
@@ -224,9 +225,11 @@
           <option value="year">Release Year</option>
         </select>
         <button class="export-btn" onclick="exportWatchlist()">⬇ Export JSON</button>
+        <button class="export-btn" onclick="document.getElementById('watchlistImport').click()">⬆ Import JSON</button>
         <button class="back-btn" onclick="showHome()">← Back</button>
       </div>
     </div>
+    <input type="file" id="watchlistImport" accept=".json" style="display:none" onchange="importList(this, 'watchlist')" />
     <div class="movies-grid" id="watchlistGrid"></div>
     <div class="empty-state" id="watchlistEmpty" style="display:none">
       <div class="empty-icon">🎞</div>
@@ -247,9 +250,11 @@
           <option value="year">Release Year</option>
         </select>
         <button class="export-btn" onclick="exportFavourites()">⬇ Export JSON</button>
+        <button class="export-btn" onclick="document.getElementById('favouritesImport').click()">⬆ Import JSON</button>
         <button class="back-btn" onclick="showHome()">← Back</button>
       </div>
     </div>
+    <input type="file" id="favouritesImport" accept=".json" style="display:none" onchange="importList(this, 'favourites')" />
     <div class="movies-grid" id="favouritesGrid"></div>
     <div class="empty-state" id="favouritesEmpty" style="display:none">
       <div class="empty-icon">💔</div>
